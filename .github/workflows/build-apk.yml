@@ -37,7 +37,7 @@ jobs:
           for old, new in replacements.items():
               s = s.replace(old, new)
           old = 'val process = Shizuku.newProcess(arrayOf("sh", "-c", script), null, null)'
-          new = 'throw UnsupportedOperationException("Shizuku process API is not available in this build; use the Android folder picker scan.")'
+          new = 'val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", script))'
           if old not in s:
               raise SystemExit("Expected Shizuku API call not found; refusing to patch an unknown source version")
           s = s.replace(old, new)
