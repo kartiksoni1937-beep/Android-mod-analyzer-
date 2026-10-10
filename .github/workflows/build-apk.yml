@@ -20,6 +20,10 @@ jobs:
       - name: Extract project source
         run: unzip -q PojavGuard-Android-APK-Build-1-Hour-Shizuku.zip
 
+      - name: Inspect scanner screen source
+        run: |
+          sed -n '1,320p' PojavGuard-Standalone/android/app/src/main/java/dev/pojavguard/standalone/MainActivity.kt
+
       - name: Patch compile blockers safely
         run: |
           python3 - <<'PY'
