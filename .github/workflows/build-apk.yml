@@ -20,6 +20,16 @@ jobs:
       - name: Extract project source
         run: unzip -q PojavGuard-Android-APK-Build-1-Hour-Shizuku.zip
 
+      - name: Inspect failing Kotlin call sites
+        run: |
+          FILE=PojavGuard-Standalone/android/app/src/main/java/dev/pojavguard/standalone/MainActivity.kt
+          for RANGE in '80,110' '160,180' '210,230' '250,300' '420,440'; do
+            echo "--- MainActivity.kt lines $RANGE ---"
+            sed -n "${RANGE}p" "$FILE"
+          done
+          echo "--- Shizuku dependency declarations ---"
+          grep -Rni 'shizuku' PojavGuard-Standalone/android/app/build.gradle.kts PojavGuard-Standalone/android/build.gradle.kts || true
+
       - name: Align Java and Kotlin JVM targets
         run: |
           find PojavGuard-Standalone/android -type f \( -name '*.gradle' -o -name '*.gradle.kts' \) -print0 | xargs -0 -r sed -i 's/JavaVersion\\.VERSION_1_8/JavaVersion.VERSION_17/g; s/jvmTarget = "1.8"/jvmTarget = "17"/g; s/jvmTarget = '\''1.8'\''/jvmTarget = '\''17'\''/g'
