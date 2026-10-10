@@ -20,15 +20,30 @@ jobs:
       - name: Extract project source
         run: unzip -q PojavGuard-Android-APK-Build-1-Hour-Shizuku.zip
 
-      - name: Inspect failing Kotlin call sites
+      - name: Patch compile blockers safely
         run: |
-          FILE=PojavGuard-Standalone/android/app/src/main/java/dev/pojavguard/standalone/MainActivity.kt
-          for RANGE in '80,110' '160,180' '210,230' '250,300' '420,440'; do
-            echo "--- MainActivity.kt lines $RANGE ---"
-            sed -n "${RANGE}p" "$FILE"
-          done
-          echo "--- Shizuku dependency declarations ---"
-          grep -Rni 'shizuku' PojavGuard-Standalone/android/app/build.gradle.kts PojavGuard-Standalone/android/build.gradle.kts || true
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("PojavGuard-Standalone/android/app/src/main/java/dev/pojavguard/standalone/MainActivity.kt")
+          s = p.read_text()
+          replacements = {
+              "loadInventory(prefs)": "loadInventory(context)",
+              "loadAlerts(prefs)": "loadAlerts(context)",
+              "loadShizukuInventory(prefs)": "loadShizukuInventory(context)",
+              "saveInventory(prefs,": "saveInventory(context,",
+              "saveAlerts(prefs,": "saveAlerts(context,",
+              "saveShizukuInventory(prefs,": "saveShizukuInventory(context,",
+          }
+          for old, new in replacements.items():
+              s = s.replace(old, new)
+          old = 'val process = Shizuku.newProcess(arrayOf("sh", "-c", script), null, null)'
+          new = 'throw UnsupportedOperationException("Shizuku process API is not available in this build; use the Android folder picker scan.")'
+          if old not in s:
+              raise SystemExit("Expected Shizuku API call not found; refusing to patch an unknown source version")
+          s = s.replace(old, new)
+          p.write_text(s)
+          print("Patched Context arguments and disabled unsupported Shizuku process execution; SAF scanner remains available.")
+          PY
 
       - name: Align Java and Kotlin JVM targets
         run: |
